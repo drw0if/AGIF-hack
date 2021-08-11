@@ -83,6 +83,21 @@ def dump(args):
             f.write(binary_dump)
 
 
+def unpack(args, filename, part_list):
+    try:
+        os.mkdir(args.dir)
+    except FileExistsError:
+        pass
+
+    with open(filename, "rb") as f:
+        for part in part_list:
+            with open(os.path.join(args.dir, part.name), "wb") as outfile:
+                f.seek(part.offset, 0)
+                data = f.read(part.size)
+                outfile.write(data)
+                print(f'Wrote {part.name} - {hex(len(data))} bytes')
+
+
 def unpack_rom(args):      
     parts = [
         Part("u-boot_version_string", 0x26D50, 22336),
@@ -96,18 +111,7 @@ def unpack_rom(args):
         Part("lzma_3", 0xFC0098, 16777216-0xFC0098),
     ]
 
-    try:
-        os.mkdir(args.dir)
-    except FileExistsError:
-        pass
-
-    with open(args.rom, "rb") as f:
-        for part in parts:
-            with open(os.path.join(args.dir, part.name), "wb") as outfile:
-                f.seek(part.offset, 0)
-                data = f.read(part.size)
-                outfile.write(data)
-                print(f'Wrote {part.name} - {hex(len(data))} bytes')
+    unpack(args, args.rom, parts)
 
 
 def unpack_update(args):
@@ -118,18 +122,7 @@ def unpack_update(args):
         Part("cramfs", 0x1F5119, 4980736),
     ]
 
-    try:
-        os.mkdir(args.dir)
-    except FileExistsError:
-        pass
-
-    with open(args.update, "rb") as f:
-        for part in parts:
-            with open(os.path.join(args.dir, part.name), "wb") as outfile:
-                f.seek(part.offset, 0)
-                data = f.read(part.size)
-                outfile.write(data)
-                print(f'Wrote {part.name} - {hex(len(data))} bytes')
+    unpack(args, args.update, parts)
 
 
 if __name__ == '__main__':
@@ -150,6 +143,13 @@ if __name__ == '__main__':
         type = int,
         default = 57600,
         help = 'Specify serial connection speed'
+    )
+
+    parser.add_argument(
+        '--dir',
+        type = str,
+        default = 'extracted',
+        help = 'Specify the directory to put the result to'
     )
 
     # Subparser
@@ -197,13 +197,6 @@ if __name__ == '__main__':
         help = 'Specify the rom filename'
     )
 
-    unpack_rom_parser.add_argument(
-        '--dir',
-        type = str,
-        default = 'extracted',
-        help = 'Specify the directory to unpack to'
-    )
-
     unpack_rom_parser.set_defaults(func = unpack_rom)
 
     # UNPACK_UPDATE sub parser
@@ -217,13 +210,6 @@ if __name__ == '__main__':
         type = str,
         default = 'update.bin',
         help = 'Specify the update filename'
-    )
-
-    unpack_update_parser.add_argument(
-        '--dir',
-        type = str,
-        default = 'extracted',
-        help = 'Specify the directory to unpack to'
     )
 
     unpack_update_parser.set_defaults(func = unpack_update)
