@@ -76,7 +76,7 @@ def dump(args):
             f.write(binary_dump)
 
 
-def unpack(args):
+def unpack_rom(args):
     class Part:
         def __init__(self, name, offset, size):
             self.name = name
@@ -161,27 +161,27 @@ if __name__ == '__main__':
 
     dump_parser.set_defaults(func = dump)
 
-    # UNPACK sub parser
-    unpack_parser = subparser.add_parser(
-        'unpack',
+    # UNPACK_ROM sub parser
+    unpack_rom_parser = subparser.add_parser(
+        'unpack-rom',
         help = 'Unpack the AGIF ROM'
     )
 
-    unpack_parser.add_argument(
+    unpack_rom_parser.add_argument(
         '--rom',
         type = str,
         default = 'dump.bin',
         help = 'Specify the rom filename'
     )
 
-    unpack_parser.add_argument(
+    unpack_rom_parser.add_argument(
         '--dir',
         type = str,
         default = 'extracted',
         help = 'Specify the directory to unpack to'
     )
 
-    unpack_parser.set_defaults(func = unpack)
+    unpack_rom_parser.set_defaults(func = unpack_rom)
 
     args = parser.parse_args()
 
