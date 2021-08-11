@@ -116,10 +116,10 @@ def unpack_rom(args):
 
 def unpack_update(args):
     parts = [
-        Part("header", 0, 429),
-        Part("uimage_header", 0x1AD, 64),
-        Part("lzma", 0x1ED, 2051884),
-        Part("cramfs", 0x1F5119, 4980736),
+        Part("header", 0, 148),
+        Part("uimage_header", 0x94, 64),
+        Part("lzma", 0xD4, 2051884),
+        Part("cramfs", 0x1F5000, 4980736),
     ]
 
     unpack(args, args.update, parts)
