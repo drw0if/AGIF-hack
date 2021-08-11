@@ -39,6 +39,13 @@ class serialWrapper():
         return self.readuntil(b'\n')
 
 
+class Part:
+    def __init__(self, name, offset, size):
+        self.name = name
+        self.offset = offset
+        self.size = size
+
+
 def dump(args):
     start = args.start
     size = args.size
@@ -76,13 +83,7 @@ def dump(args):
             f.write(binary_dump)
 
 
-def unpack_rom(args):
-    class Part:
-        def __init__(self, name, offset, size):
-            self.name = name
-            self.offset = offset
-            self.size = size
-        
+def unpack_rom(args):      
     parts = [
         Part("u-boot_version_string", 0x26D50, 22336),
         Part("CRC32_polynomial_table", 0x2C490, 343044),
@@ -101,6 +102,28 @@ def unpack_rom(args):
         pass
 
     with open(args.rom, "rb") as f:
+        for part in parts:
+            with open(os.path.join(args.dir, part.name), "wb") as outfile:
+                f.seek(part.offset, 0)
+                data = f.read(part.size)
+                outfile.write(data)
+                print(f'Wrote {part.name} - {hex(len(data))} bytes')
+
+
+def unpack_update(args):
+    parts = [
+        Part("header", 0, 429),
+        Part("uimage_header", 0x1AD, 64),
+        Part("lzma", 0x1ED, 2051884),
+        Part("cramfs", 0x1F5119, 4980736),
+    ]
+
+    try:
+        os.mkdir(args.dir)
+    except FileExistsError:
+        pass
+
+    with open(args.update, "rb") as f:
         for part in parts:
             with open(os.path.join(args.dir, part.name), "wb") as outfile:
                 f.seek(part.offset, 0)
@@ -182,6 +205,28 @@ if __name__ == '__main__':
     )
 
     unpack_rom_parser.set_defaults(func = unpack_rom)
+
+    # UNPACK_UPDATE sub parser
+    unpack_update_parser = subparser.add_parser(
+        'unpack-update',
+        help = 'Unpack the AGIF update'
+    )
+
+    unpack_update_parser.add_argument(
+        '--update',
+        type = str,
+        default = 'update.bin',
+        help = 'Specify the update filename'
+    )
+
+    unpack_update_parser.add_argument(
+        '--dir',
+        type = str,
+        default = 'extracted',
+        help = 'Specify the directory to unpack to'
+    )
+
+    unpack_update_parser.set_defaults(func = unpack_update)
 
     args = parser.parse_args()
 
