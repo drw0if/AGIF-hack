@@ -125,6 +125,45 @@ def unpack_update(args):
     unpack(args, args.update, parts)
 
 
+def pack(args):
+    parts = [
+        Part("header", 0, 148),
+        Part("uimage_header", 0x94, 64),
+        Part("lzma", 0xD4, 2051884),
+        Part("cramfs", 0x1F5000, 4980736),
+    ]
+
+    data = bytearray()
+
+    for part in parts:
+        with open(os.path.join(args.dir, part.name), "rb") as infile:
+            data += infile.read()
+
+    # add size
+    size = len(data) - 148
+    data[7] = size & 0xFF
+    data[6] = (size >> 8) & 0xFF
+    data[5] = (size >> 16) & 0xFF
+    data[4] = (size >> 24) & 0xFF
+
+    print(f'Size: {size:#x}')
+
+    # add checksum
+    data[8] = data[9] = data[10] = data[11] = 0
+    checksum = sum(data)
+
+    data[11] = checksum & 0xFF
+    data[10] = (checksum >> 8) & 0xFF
+    data[9] = (checksum >> 16) & 0xFF
+    data[8] = (checksum >> 24) & 0xFF
+
+    print(f'Checksum: {checksum:#x}')
+
+    with open("AGIF_patched.img", "wb") as f:
+        f.write(data)
+        print(f'Wrote {len(data)} bytes')
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description = 'AGIF router tool',
@@ -213,6 +252,14 @@ if __name__ == '__main__':
     )
 
     unpack_update_parser.set_defaults(func = unpack_update)
+
+    # PACK sub parser
+    pack_parser = subparser.add_parser(
+        'pack',
+        help = 'Pack the AGIF update'
+    )
+
+    pack_parser.set_defaults(func = pack)
 
     args = parser.parse_args()
 
